@@ -1,0 +1,14 @@
+# Ekip
+
+Ekip departmanlara ayrılır. Her departmanın kendi klasörü, ortak kuralları (`DEPARTMAN.md`) ve isteğe bağlı bir **şefi** vardır. Şefe bir konu verirsen işi parçalara ayırıp departmandaki çalışanlara dağıtır ve sonunda tek bir teslim yapar. Ortak kurallar `ORTAK.md`'de. Yeni departmanı ve çalışanı **Worker Kurucu** kurar.
+
+**Bir çalışanı başlatmak için:**
+- Terminal (Linux/macOS): `ekip "<Departman>/<Çalışan>"` (tmux içinde açar, panodan mesaj gönderilebilir). Ya da `cd "<bu klasör>/<Departman>/<Çalışan>"`, sonra `claude`
+- Claude masaüstü uygulaması: Code sekmesi → yeni oturum → çalışanın klasörünü seç → başlangıç komutu
+
+## Yönetim
+| Çalışan | Klasör | Ne yapar | Başlangıç komutu | Kuruluş |
+|---|---|---|---|---|
+| Worker Kurucu | `Worker Kurucu/` | Departman ve çalışanları görüşme yaparak tasarlar ve kurar, mevcutları günceller | `/yeni-calisan` | {{TARIH}} |
+
+<!-- Worker Kurucu her yeni departman için buraya "## <Departman>: <kısa açıklama>" başlığı ve aynı sütunlarla bir tablo ekler. -->

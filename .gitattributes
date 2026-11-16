@@ -1,0 +1,5 @@
+# Ubuntu/macOS'ta sorunsuz çalışsın diye bütün metin dosyaları LF satır sonuyla kalır
+* text=auto eol=lf
+*.bat text eol=crlf
+*.png binary
+*.jpg binary

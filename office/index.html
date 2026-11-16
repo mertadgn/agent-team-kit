@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="office-token" content="{{OFFICE_TOKEN}}">
+<title>Agent Ofisi</title>
+<style>
+:root{
+  --bg:#ECE7DE; --floor-a:#E2DACB; --floor-b:#DCD3C2; --ink:#1E2026; --muted:#6B6A66; --card:#FFFDF8; --line:#D4CBBB;
+  --desk:#B98A5E; --desk-edge:#9C7049; --screen:#20242C; --chair:#3A3F4B;
+  --run:#2FA36B; --think:#3C7DD9; --wait:#E8862A; --perm:#D9473C; --idle:#9B978F;
+  --shadow:0 1px 2px rgba(0,0,0,.08),0 6px 18px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#16181D; --floor-a:#1D2027; --floor-b:#1A1C22; --ink:#ECEAE4; --muted:#9A988F; --card:#22252D; --line:#30343E;
+    --desk:#7A5A3E; --desk-edge:#5E432D; --screen:#0E1014; --chair:#4A505E; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 22px rgba(0,0,0,.35); }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif}
+header{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:14px 22px;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em}
+h1 small{font-weight:500;color:var(--muted);font-size:13px;margin-left:6px}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);font-size:13px;white-space:nowrap}
+.pill b{font-variant-numeric:tabular-nums}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.right{margin-left:auto;display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px}
+.vgroup{display:inline-flex;gap:4px}
+.vbtn{font:inherit;font-size:12px;font-weight:600;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer;white-space:nowrap}
+.vbtn[aria-pressed="true"]{background:color-mix(in srgb,var(--wait) 18%,var(--card));border-color:var(--wait)}
+.vbtn.ghost{padding:4px 9px}
+.vbtn.need{animation:pulse 1.6s infinite}
+select{font:inherit;font-size:12px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:3px 6px}
+
+/* limitler */
+#limits{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 18px;border-bottom:1px solid var(--line);background:var(--bg)}
+#limits:empty{display:none}
+.lim{flex:1 1 190px;max-width:300px;background:var(--card);border-radius:10px;box-shadow:var(--shadow);padding:5px 10px}
+.lim .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--muted)}
+.lim .row b{font-size:14px;color:var(--ink);font-variant-numeric:tabular-nums}
+.lim .lb{font-size:12px;font-weight:600;color:var(--ink)}
+.lim .bar{height:4px;margin:3px 0 2px}
+.limnote{flex:1 1 220px;font-size:10.5px;color:var(--muted);line-height:1.35}
+@media (max-width:520px){#limits{padding:10px 16px}}
+/* zemin */
+body{display:flex;flex-direction:column;min-height:100vh}
+#floor{flex:1;padding:16px 18px 24px;
+  background-color:var(--floor-a);
+  background-image:linear-gradient(45deg,var(--floor-b) 25%,transparent 25%,transparent 75%,var(--floor-b) 75%),
+                   linear-gradient(45deg,var(--floor-b) 25%,transparent 25%,transparent 75%,var(--floor-b) 75%);
+  background-size:64px 64px;background-position:0 0,32px 32px}
+@media (max-width:520px){#floor{padding:30px 16px 50px}header{padding:12px 16px}}
+html,body{overflow-x:hidden}
+#grid{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:80px 0}
+.roomcard{flex:1 1 200px;min-width:0;max-width:100%;background:color-mix(in srgb,var(--bg) 55%,transparent);border:2px solid color-mix(in srgb,var(--muted) 28%,transparent);border-radius:16px;padding:10px 12px 14px;min-width:0}
+.roomcard.emptyroom{opacity:.7}
+.rhead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-bottom:8px}
+.rhead .rname{font-weight:750;font-size:15px;letter-spacing:-.01em;margin-right:4px}
+.rhead .rstat{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);background:var(--card);border-radius:999px;padding:2px 8px;box-shadow:var(--shadow)}
+.desks{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(150px,1fr));gap:14px 10px}
+@media (max-width:520px){.desks{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}
+.emptyroom .desks{display:none}
+.st.s-off{opacity:.62}
+.st.s-off:hover{opacity:.9}
+.st.s-off .bubble{font-style:italic}
+
+/* masa istasyonu */
+.st{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;padding-top:40px;min-width:0}
+.st svg{width:150px;height:130px;overflow:visible;transition:transform .2s}
+.st:hover svg{transform:translateY(-3px)}
+.bubble{position:absolute;top:0;left:50%;transform:translateX(-50%);max-width:168px;width:max-content;min-width:80px;padding:4px 9px;border-radius:10px;
+  background:var(--card);box-shadow:var(--shadow);font-size:13px;line-height:1.3;text-align:center;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;border:2px solid transparent}
+.bubble:after{content:"";position:absolute;bottom:-5px;left:50%;margin-left:-5px;width:10px;height:10px;background:var(--card);z-index:-1;transform:rotate(45deg);border-right:2px solid transparent;border-bottom:2px solid transparent;border-color:inherit;border-top:0;border-left:0}
+.s-izin .bubble{border-color:var(--perm);animation:pulse 1.2s infinite}
+.s-bekliyor .bubble{border-color:var(--wait)}
+.s-bosta .bubble,.s-kapandi .bubble{opacity:.65}
+@keyframes pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--perm) 25%,transparent)}}
+.plate{margin-top:4px;width:100%;max-width:172px;background:var(--card);border-radius:10px;box-shadow:var(--shadow);padding:6px 9px}
+.plate .t{font-weight:650;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plate .p{display:flex;justify-content:space-between;gap:6px;color:var(--muted);font-size:10.5px;margin-top:1px}
+.plate .p span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:4px;border-radius:3px;background:color-mix(in srgb,var(--muted) 18%,transparent);margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--think)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+
+/* animasyonlar (SVG içi) */
+.s-calisiyor .armL{animation:typeL .32s infinite alternate}
+.s-calisiyor .armR{animation:typeR .32s infinite alternate}
+@keyframes typeL{to{transform:translateY(-4px)}} @keyframes typeR{from{transform:translateY(-4px)}to{transform:none}}
+.s-calisiyor .code{animation:scroll 1.4s linear infinite}
+@keyframes scroll{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.s-dusunuyor .tdot{animation:blink 1.2s infinite} .tdot:nth-child(2){animation-delay:.2s!important} .tdot:nth-child(3){animation-delay:.4s!important}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+.zz{animation:float 3s ease-in-out infinite;opacity:0}
+.s-bosta .zz{opacity:1}
+@keyframes float{0%{transform:translate(0,4px);opacity:0}30%{opacity:1}100%{transform:translate(10px,-18px);opacity:0}}
+/* durum rozeti yerinde durur; sadece etrafındaki halka yumuşakça dışa doğru solar */
+.ring{animation:ring 1.6s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes ring{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.8);opacity:0}}
+.s-bekliyor .ring{animation-duration:2.4s}
+.helper{animation:hop 2.4s ease-in-out infinite}
+.helper.done{animation:none;opacity:.55}
+.chat{opacity:0;animation:chat 3.2s infinite}
+@keyframes chat{0%{opacity:0}8%{opacity:1}42%{opacity:1}50%{opacity:0}100%{opacity:0}}
+.runner{position:fixed;left:0;top:0;z-index:30;pointer-events:none;will-change:transform}
+.runner svg{animation:step .28s ease-in-out infinite alternate}
+.runner.fast svg{animation-duration:.14s}
+@keyframes step{from{transform:scale(.94)}to{transform:scale(1.06)}}
+.st.arriving .who{opacity:0}
+.cfig.arriving{opacity:0}
+.rhead .corner{margin-left:auto;flex:none;margin-top:-10px;margin-bottom:-12px}
+.steam{animation:steam 2.4s ease-in-out infinite}
+@keyframes steam{0%{opacity:0;transform:translateY(2px)}40%{opacity:.9}100%{opacity:0;transform:translateY(-3px)}}
+.reelbg{animation:reelbg 3.6s steps(1) infinite}
+@keyframes reelbg{0%{fill:#E8862A}25%{fill:#4C7BD9}50%{fill:#C9507F}75%{fill:#3AA57A}}
+.reelscroll{animation:reelscroll .9s ease-in infinite}
+@keyframes reelscroll{0%{transform:translateY(6px);opacity:0}30%{opacity:1}100%{transform:translateY(-8px);opacity:0}}
+@keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+
+/* detay çekmecesi */
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);background:var(--card);box-shadow:-10px 0 40px rgba(0,0,0,.18);
+  transform:translateX(105%);transition:transform .25s ease;z-index:10;overflow:auto;padding:22px 22px 40px}
+#drawer.open{transform:none}
+#drawer h2{margin:0 34px 4px 0;font-size:18px;line-height:1.3}
+.composer{margin-top:20px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg)}
+.composer h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px}
+.composer textarea{width:100%;min-height:74px;resize:vertical;font:inherit;font-size:14px;color:var(--ink);background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.composer textarea:focus{outline:2px solid color-mix(in srgb,var(--think) 50%,transparent);outline-offset:1px}
+.composer .row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.composer button{font-weight:600;font-size:13px;font-family:inherit;border-radius:999px;padding:7px 14px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.composer button.primary{background:var(--think);border-color:var(--think);color:#fff}
+.composer button:disabled{opacity:.45;cursor:not-allowed}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.abtn{font-family:inherit;font-weight:600;font-size:12px;border-radius:999px;padding:6px 12px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.abtn:disabled{opacity:.45;cursor:not-allowed}
+.abtn.danger{border-color:color-mix(in srgb,var(--perm) 60%,var(--line));color:var(--perm)}
+.abtn.danger:hover:not(:disabled){background:color-mix(in srgb,var(--perm) 12%,var(--card))}
+.actmsg{font-size:12px;margin-top:6px;min-height:16px;color:var(--muted)}
+.arow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.composer .hint{font-size:12px;color:var(--muted);margin-left:auto}
+.composer .msg{font-size:12px;margin-top:6px;min-height:16px}
+.composer.off textarea{opacity:.5}
+#drawer .x{position:absolute;top:14px;right:14px;border:0;background:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1}
+.meta{color:var(--muted);font-size:12px;word-break:break-all}
+.sec{margin-top:20px}
+.sec h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 8px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv div{background:var(--bg);border-radius:10px;padding:8px 10px}
+.kv b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.kv span{font-size:11px;color:var(--muted)}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:22px 1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.tl li time{color:var(--muted);font-size:11px;white-space:nowrap}
+.say{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:13px;white-space:pre-wrap;max-height:180px;overflow:auto}
+.hl{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.hl .tag{margin-bottom:4px}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+.tools span{background:var(--bg);border-radius:999px;padding:3px 9px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🏢 Agent Ofisi<small id="sub">yükleniyor…</small></h1>
+  <div class="stats" id="stats"></div>
+  <div class="right">
+    <span class="vgroup"><button id="voiceBtn" class="vbtn" aria-pressed="false" title="Bir çalışan senden cevap ya da onay beklemeye geçince sesli söyler">🔕 Sesli uyarı kapalı</button><button id="voiceTest" class="vbtn ghost" title="Sesi dene" aria-label="Sesi dene">▶</button></span>
+    <button id="arsivBtn" class="vbtn" style="display:none" title="İşten çıkarılan çalışanlar ve kaldırılan masalar">🗄️ Arşiv</button>
+    <label>Göster <select id="win">
+      <option value="1">son 1 saat</option><option value="6">son 6 saat</option>
+      <option value="24" selected>son 24 saat</option><option value="168">son 7 gün</option></select></label>
+    <span id="live"></span>
+  </div>
+</header>
+<section id="limits" aria-label="Limitler"></section>
+<main id="floor"><div id="grid"></div></main>
+<aside id="drawer" aria-hidden="true"><button class="x" onclick="closeDrawer()" aria-label="Kapat">×</button><div id="dtop"></div><div id="dctl"></div><div id="dbody"></div></aside>
+
+<script>
+const ST = {
+  izin:{label:"Onay bekliyor",c:"--perm"}, calisiyor:{label:"Çalışıyor",c:"--run"}, dusunuyor:{label:"Düşünüyor",c:"--think"},
+  bekliyor:{label:"Seni bekliyor",c:"--wait"}, bosta:{label:"Boşta",c:"--idle"}, kapandi:{label:"Kapandı",c:"--idle"}, bitti:{label:"Bitti",c:"--idle"}
+};
+const col = s => `var(${(ST[s]||ST.bosta).c})`;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const fmtTok = n => n>=1e6 ? (n/1e6).toFixed(1).replace(".",",")+" M" : n>=1e3 ? Math.round(n/1e3)+" B" : String(Math.round(n||0));
+const ago = (t, now) => { if(!t) return ""; const s=Math.max(0,now-t);
+  return s<45?"az önce": s<3600? Math.round(s/60)+" dk önce" : s<86400? Math.round(s/3600)+" sa önce" : Math.round(s/86400)+" gün önce"; };
+const clock = t => t ? new Date(t*1000).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}) : "";
+const hash = s => { let h=0; for(const c of s) h=(h*31+c.charCodeAt(0))|0; return Math.abs(h); };
+const shirts = ["#4C7BD9","#D9634C","#3AA57A","#9A5CD0","#D9A13C","#3C9FB5","#C9507F","#6B8E3A"];
+const hairs  = ["#2B211C","#4A3426","#1C1C1C","#6B4A2E","#8A6A4A","#3B2F2F"];
+const skins  = ["#F1C7A5","#E2B08A","#C98E66","#F5D3B8","#A8714D"];
+
+let DATA = null, OPEN = null, WIN = 24;
+try { WIN = +localStorage.getItem("office-win") || 24; } catch(e) {}
+document.getElementById("win").value = String(WIN);
+document.getElementById("win").onchange = e => { WIN=+e.target.value; try{localStorage.setItem("office-win",WIN)}catch(_){}; render(); };
+
+// "Seni bekliyor" durumundakiler boş durmaz: reels kaydırır ya da kahve köşesine gider. Her 4 dakikada bir değişir.
+const ACTS = ["reels", "kahve"];
+const activityOf = s => s.status === "bekliyor" && DATA ? ACTS[(hash(s.id) + Math.floor(DATA.now / 240)) % ACTS.length] : null;
+const ACT_TEXT = {reels: "📱 reels kaydırıyor", kahve: "☕ kahve molasında"};
+
+// --- Masa ↔ kahve köşesi: yürüyerek gider, mesaj gelince koşarak döner. Yol çapraz değil: önce yatay, sonra dikey. ---
+const PREV_ACT = {}, ARRIVING = {};
+const arriving = id => (ARRIVING[id] || 0) > Date.now();
+function snapPositions(){
+  const pos = {};
+  document.querySelectorAll(".cfig[data-sid]").forEach(g => { const r = g.getBoundingClientRect(); if(r.width) pos["c:" + g.dataset.sid] = [r.left + r.width/2, r.top + r.height/2]; });
+  document.querySelectorAll(".st[data-id] > svg").forEach(svg => { const r = svg.getBoundingClientRect(); if(r.width) pos["d:" + svg.parentElement.dataset.id] = [r.left + r.width*115/230, r.top + r.height*128/200]; });
+  return pos;
+}
+function walk(s, from, to, ms, dest){
+  if(!from || !to || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const sd = hash(s.id), shirt = shirts[sd%shirts.length], hair = hairs[(sd>>3)%hairs.length];
+  const el = document.createElement("div");
+  el.className = "runner" + (ms < 1200 ? " fast" : "");
+  el.innerHTML = `<svg viewBox="-14 -14 28 28" width="30" height="30"><ellipse cx="0" cy="4" rx="13" ry="8" fill="#000" opacity=".15"/><ellipse cx="0" cy="2" rx="12" ry="7.5" fill="${shirt}"/><circle cx="0" cy="-2" r="6.5" fill="${hair}"/></svg>`;
+  document.body.appendChild(el);
+  ARRIVING[s.id] = Date.now() + ms + 100;
+  if(dest) dest.classList.add("arriving");
+  const [x0, y0] = from, [x1, y1] = to, dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+  const a = el.animate([
+    {transform: `translate(${x0-15}px,${y0-15}px)`},
+    {transform: `translate(${x1-15}px,${y0-15}px)`, offset: dx + dy ? dx / (dx + dy) : .5},
+    {transform: `translate(${x1-15}px,${y1-15}px)`}], {duration: ms, easing: "linear"});
+  a.onfinish = () => { el.remove(); delete ARRIVING[s.id];
+    document.querySelectorAll(`[data-id="${CSS.escape(s.id)}"].arriving, .cfig[data-sid="${CSS.escape(s.id)}"].arriving`).forEach(x => x.classList.remove("arriving")); };
+}
+function runTransitions(list, before){
+  const after = snapPositions();
+  for(const s of list){
+    const a = activityOf(s), p = PREV_ACT[s.id];
+    PREV_ACT[s.id] = a;
+    if(p === undefined || p === a) continue;
+    if(p === "kahve")  // kahveden masaya: mesaj geldiyse koşar, aktivite değiştiyse yürür
+      walk(s, before["c:" + s.id], after["d:" + s.id], s.status === "bekliyor" ? 2200 : 1000, document.querySelector(`.st[data-id="${CSS.escape(s.id)}"]`));
+    else if(a === "kahve")
+      walk(s, before["d:" + s.id], after["c:" + s.id], 2200, document.querySelector(`.cfig[data-sid="${CSS.escape(s.id)}"]`));
+  }
+}
+
+function personPhone(x, y, seed){
+  // telefonla: kollar öne, iki el ortada telefonu tutuyor; ekran renk değiştirir, içerik yukarı kayar
+  const shirt = shirts[seed%shirts.length], hair = hairs[(seed>>3)%hairs.length], skin = skins[(seed>>5)%skins.length];
+  return `<g class="who" transform="translate(${x},${y})">
+    <ellipse cx="0" cy="4" rx="38" ry="24" fill="#000" opacity=".10"/>
+    <rect x="-26" y="-26" width="11" height="26" rx="5.5" fill="${shirt}" transform="rotate(28 -20 -2)"/>
+    <rect x="15" y="-26" width="11" height="26" rx="5.5" fill="${shirt}" transform="rotate(-28 20 -2)"/>
+    <ellipse cx="0" cy="0" rx="33" ry="18" fill="${shirt}"/>
+    <circle cx="-15" cy="-8" r="4" fill="${skin}"/><circle cx="15" cy="-8" r="4" fill="${skin}"/>
+    <rect x="-6" y="2" width="12" height="7" rx="3" fill="${skin}"/>
+    <circle cx="0" cy="-7" r="15" fill="${hair}"/>
+    <path d="M-9,-15 Q0,-21 9,-15" stroke="#fff" stroke-opacity=".18" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <g transform="translate(0,-36)">
+      <rect x="-9" y="-13" width="18" height="26" rx="3.5" fill="#15171c"/>
+      <clipPath id="ph${seed}"><rect x="-7" y="-11" width="14" height="22" rx="2"/></clipPath>
+      <g clip-path="url(#ph${seed})">
+        <rect class="reelbg" x="-7" y="-11" width="14" height="22"/>
+        <g class="reelscroll"><rect x="-5" y="-2" width="10" height="2.4" rx="1.2" fill="#fff" opacity=".85"/><rect x="-5" y="2" width="7" height="2" rx="1" fill="#fff" opacity=".6"/></g>
+      </g>
+      <circle cx="-9" cy="4" r="4.6" fill="${skin}"/><circle cx="9" cy="4" r="4.6" fill="${skin}"/>
+    </g>
+  </g>`;
+}
+
+function coffeeCorner(people){
+  // kahve makinesi + buhar + bitki; molada olanlar yanında fincanla durur (en fazla 3 kişi çizilir)
+  const shown = people.slice(0, 3);
+  const w = 64 + shown.length * 26;
+  return `<svg class="corner" viewBox="0 0 ${w} 44" width="${Math.round(w*1.45)}" height="64" role="img" aria-label="Kahve köşesi${shown.length ? ": " + shown.map(p=>p.worker||p.project).join(", ") : ""}">
+    <title>Kahve köşesi${shown.length ? " · molada: " + shown.map(p=>p.worker||p.project).join(", ") : ""}</title>
+    <circle cx="9" cy="33" r="7" fill="#C9673F"/><circle cx="6" cy="27" r="6" fill="#4E9A55"/><circle cx="12" cy="26" r="5.5" fill="#3E8A48"/><circle cx="9" cy="22" r="5" fill="#5DAA60"/>
+    <rect x="22" y="8" width="26" height="32" rx="4" fill="#3A3F4B"/><rect x="24" y="10" width="22" height="9" rx="2" fill="#20242C"/>
+    <circle cx="29" cy="14.5" r="1.8" fill="#2FA36B"/><circle cx="35" cy="14.5" r="1.8" fill="#E8862A"/><rect x="39" y="13" width="5" height="3" rx="1" fill="#9AA0AE"/>
+    <rect x="29" y="22" width="12" height="3" rx="1.5" fill="#20242C"/>
+    <rect x="31" y="29" width="8" height="8" rx="1.5" fill="#F4F1EA"/>
+    <g class="steam"><path d="M33,27 q-1.5,-3 0,-6" stroke="#cfd3da" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M37,27 q1.5,-3 0,-6" stroke="#cfd3da" stroke-width="1.3" fill="none" stroke-linecap="round"/></g>
+    ${shown.map((p, i) => { const sd = hash(p.id), shirt = shirts[sd%shirts.length], hair = hairs[(sd>>3)%hairs.length]; const cx = 64 + i*26;
+      const n = shown.length, face = n < 2 ? 0 : (i < n/2 ? 22 : -22);  // ikiden fazlaysa birbirlerine dönerler
+      const chat = n >= 2 ? `<g class="chat" style="animation-delay:${(i*3.2/n).toFixed(2)}s" transform="translate(${face>0?4:-4},-12)"><rect x="-8" y="-6" width="16" height="9" rx="4" fill="var(--card)" stroke="var(--line)" stroke-width=".8"/><circle cx="-3.5" cy="-1.5" r="1" fill="var(--muted)"/><circle cx="0" cy="-1.5" r="1" fill="var(--muted)"/><circle cx="3.5" cy="-1.5" r="1" fill="var(--muted)"/></g>` : "";
+      const cup = face < 0 ? -11 : 6;
+      return `<g transform="translate(${cx},28)"><g class="cfig${arriving(p.id) ? " arriving" : ""}" data-sid="${esc(p.id)}"><title>${esc(p.worker||p.project)} kahve molasında</title>
+        <g transform="rotate(${face})"><ellipse cx="0" cy="3" rx="11" ry="7" fill="#000" opacity=".12"/><ellipse cx="0" cy="1" rx="10" ry="6" fill="${shirt}"/><circle cx="0" cy="-3" r="5.5" fill="${hair}"/></g>
+        <rect x="${cup}" y="-4" width="5" height="5" rx="1" fill="#F4F1EA"/><path class="steam" d="M${cup+2.5},-6 q-1,-2 0,-4" stroke="#cfd3da" stroke-width="1" fill="none"/>${chat}</g></g>`; }).join("")}
+    ${people.length > 3 ? `<text x="${w-2}" y="10" text-anchor="end" font-size="9" fill="var(--muted)">+${people.length-3}</text>` : ""}
+  </svg>`;
+}
+
+function person(x, y, seed, s, scale=1){
+  // tepeden bakış: omuzlar + baş (saç tepesi), kollar klavyeye uzanır
+  const shirt = shirts[seed%shirts.length], hair = hairs[(seed>>3)%hairs.length], skin = skins[(seed>>5)%skins.length];
+  const away = s==="kapandi";
+  if (away) return "";
+  return `<g class="who" transform="translate(${x},${y}) scale(${scale})">
+    <ellipse cx="0" cy="4" rx="38" ry="24" fill="#000" opacity=".10"/>
+    <g class="armL"><rect x="-30" y="-30" width="11" height="30" rx="5.5" fill="${shirt}"/><circle cx="-24.5" cy="-31" r="5.5" fill="${skin}"/></g>
+    <g class="armR"><rect x="19" y="-30" width="11" height="30" rx="5.5" fill="${shirt}"/><circle cx="24.5" cy="-31" r="5.5" fill="${skin}"/></g>
+    <ellipse cx="0" cy="0" rx="33" ry="18" fill="${shirt}"/>
+    <circle cx="-15" cy="-8" r="4" fill="${skin}"/><circle cx="15" cy="-8" r="4" fill="${skin}"/>
+    <rect x="-6" y="2" width="12" height="7" rx="3" fill="${skin}"/>
+    <circle cx="0" cy="-7" r="15" fill="${hair}"/>
+    <path d="M-9,-15 Q0,-21 9,-15" stroke="#fff" stroke-opacity=".18" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>`;
+}
+
+function helperFig(x, y, seed, done){
+  const shirt = shirts[(seed+3)%shirts.length], hair = hairs[(seed>>2)%hairs.length], skin = skins[(seed>>4)%skins.length];
+  return `<g class="helper ${done?"done":""}" style="animation-delay:${(seed%10)/10}s"><g transform="translate(${x},${y}) scale(.55)">
+    <ellipse cx="0" cy="3" rx="30" ry="19" fill="#000" opacity=".10"/>
+    <ellipse cx="0" cy="0" rx="28" ry="16" fill="${shirt}"/>
+    <circle cx="0" cy="-3" r="13" fill="${skin}"/>
+    <path d="M-13,-1 A13,13 0 1 1 13,-1 Q6,-7 0,-6 Q-6,-7 -13,-1Z" fill="${hair}"/>
+  </g></g>`;
+}
+
+function stationSVG(s){
+  const seed = hash(s.id), c = col(s.status), on = ["calisiyor","dusunuyor","izin"].includes(s.status);
+  const plant = seed % 3 === 0, mug = seed % 2 === 0;
+  const helpers = (s.helpers||[]).slice(-5);
+  const spots = [[-6,150],[236,150],[-6,92],[236,92],[115,196]];
+  return `<svg viewBox="0 0 230 200" role="img" aria-label="${esc(s.title)}">
+    <!-- masa -->
+    <rect x="18" y="20" width="194" height="86" rx="8" fill="var(--desk-edge)"/>
+    <rect x="18" y="16" width="194" height="84" rx="8" fill="var(--desk)"/>
+    <!-- monitör -->
+    <rect x="70" y="24" width="90" height="14" rx="3" fill="#2A2D34"/>
+    <rect x="66" y="30" width="98" height="40" rx="5" fill="var(--screen)" stroke="#3A3E48" stroke-width="2"/>
+    <clipPath id="sc${seed}"><rect x="70" y="34" width="90" height="32" rx="2"/></clipPath>
+    <rect x="70" y="34" width="90" height="32" rx="2" fill="${c}" opacity="${on?0.22:0.06}"/>
+    <g clip-path="url(#sc${seed})"><g class="code" opacity="${on?0.9:0.25}">
+      ${[0,1,2,3,4,5].map(i=>`<rect x="${76+(i%3)*6}" y="${38+i*6}" width="${30+((seed>>i)%5)*9}" height="2.6" rx="1.3" fill="${c}"/>`).join("")}
+    </g></g>
+    <!-- klavye, fare -->
+    <rect x="82" y="76" width="66" height="14" rx="3" fill="#E9E6DF" opacity=".92"/>
+    ${[0,1,2].map(r=>`<rect x="86" y="${79+r*3.6}" width="58" height="1.6" rx=".8" fill="#B9B4AA"/>`).join("")}
+    <rect x="156" y="79" width="9" height="13" rx="4.5" fill="#E9E6DF" opacity=".92"/>
+    ${mug?`<circle cx="44" cy="44" r="9" fill="#F4F1EA"/><circle cx="44" cy="44" r="6" fill="#6B4528"/><rect x="52" y="41" width="5" height="6" rx="2" fill="#F4F1EA"/>`:""}
+    ${plant?`<circle cx="188" cy="40" r="11" fill="#C9673F"/><circle cx="184" cy="36" r="8" fill="#4E9A55"/><circle cx="193" cy="38" r="7" fill="#3E8A48"/><circle cx="188" cy="44" r="7" fill="#5DAA60"/>`:""}
+    <rect x="28" y="70" width="34" height="22" rx="3" fill="#F4F1EA" opacity=".85" transform="rotate(-8 45 81)"/>
+    <!-- sandalye -->
+    <circle cx="115" cy="140" r="30" fill="var(--chair)" opacity=".85"/>
+    <rect x="92" y="160" width="46" height="12" rx="6" fill="var(--chair)"/>
+    ${activityOf(s) === "kahve" ? `<text x="115" y="146" text-anchor="middle" font-size="11" fill="var(--muted)">☕ molada</text>`
+      : activityOf(s) === "reels" ? personPhone(115, 128, seed) : person(115, 128, seed, s.status)}
+    <!-- durum işaretleri -->
+    ${s.status==="dusunuyor"?`<g transform="translate(152,100)"><circle class="ring" r="13" fill="none" stroke="var(--think)" stroke-width="3"/><circle r="13" fill="var(--think)"/>
+      <circle class="tdot" cx="-5.5" cy="0" r="2.2" fill="#fff"/><circle class="tdot" cx="0" cy="0" r="2.2" fill="#fff"/><circle class="tdot" cx="5.5" cy="0" r="2.2" fill="#fff"/></g>`:""}
+    ${s.status==="bosta"?`<g transform="translate(140,104)" font-weight="700" fill="var(--idle)"><text class="zz" x="0" y="0" font-size="15">z</text><text class="zz" x="10" y="-8" font-size="12" style="animation-delay:1s">z</text><text class="zz" x="18" y="-16" font-size="10" style="animation-delay:2s">z</text></g>`:""}
+    ${s.status==="bekliyor"||s.status==="izin"?`<g transform="translate(152,100)"><circle class="ring" r="13" fill="none" stroke="${c}" stroke-width="3"/><circle r="13" fill="${c}"/><text y="5.5" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">${s.status==="izin"?"?":"!"}</text></g>`:""}
+    ${s.status==="kapandi"?`<text x="115" y="146" text-anchor="middle" font-size="12" fill="var(--muted)">boş masa</text>`:""}
+    <!-- yardımcılar (alt agent'lar) -->
+    ${helpers.map((h,i)=>helperFig(spots[i][0], spots[i][1], hash(h.id), ["bitti","bosta","kapandi"].includes(h.status))).join("")}
+    ${(s.helpers||[]).length>5?`<text x="230" y="196" text-anchor="end" font-size="12" fill="var(--muted)">+${s.helpers.length-5}</text>`:""}
+  </svg>`;
+}
+
+const YONETIM = "Yönetim";
+function roomHTML(name, ss, idleN = 0){
+  const c = k => ss.filter(s=>s.status===k).length;
+  const work = c("calisiyor") + c("dusunuyor"), wait = c("bekliyor") + c("izin");
+  const tok = ss.reduce((a,s)=>a+s.tokens_all,0);
+  const label = name === null ? "Ekip dışı" : name === "" ? "Oturumlar" : name;
+  const icon = name === null ? "🗂️" : name === YONETIM ? "🧭" : "🚪";
+  return `<span class="rname">${icon} ${esc(label)}</span>
+    ${ss.length + idleN ? `<span class="rstat">${ss.length ? `${ss.length} mesaide` : "kimse mesaide değil"}${idleN ? ` · ${idleN} boşta` : ""}</span>` : `<span class="rstat">boş</span>`}
+    ${work ? `<span class="rstat"><span class="dot" style="background:var(--run)"></span>${work} çalışıyor</span>` : ""}
+    ${wait ? `<span class="rstat"><span class="dot" style="background:var(--wait)"></span>${wait} seni bekliyor</span>` : ""}
+    ${tok ? `<span class="rstat">∑ ${fmtTok(tok)}</span>` : ""}
+    ${coffeeCorner(ss.filter(x => activityOf(x) === "kahve"))}`;
+}
+
+function stationHTML(s, now, maxTok){
+  const meta = ST[s.status]||ST.bosta;
+  const a = activityOf(s);
+  const act = a ? `Seni bekliyor · ${ACT_TEXT[a]}` : (s.activity || meta.label);
+  const nh = (s.helpers||[]).filter(h=>!["bitti","bosta","kapandi"].includes(h.status)).length;
+  return `<div class="st s-${s.status}${arriving(s.id) ? " arriving" : ""}" data-id="${esc(s.id)}" tabindex="0">
+    <div class="bubble">${esc(act)}</div>
+    ${stationSVG(s)}
+    <div class="plate">
+      <div class="tag" style="color:${col(s.status)}"><span class="dot" style="background:${col(s.status)}"></span>${meta.label}${nh?` · ${nh} yardımcı`:""}</div>
+      <div class="t" title="${esc(s.title)}">${esc(s.title)}</div>
+      <div class="p"><span>${s.worker ? `👤 ${esc(s.worker)}` : `📁 ${esc(s.project)}`}</span><span>${ago(s.last_ts, now)}</span></div>
+      <div class="bar" title="Etkin token: ${fmtTok(s.tokens_all)}"><i style="width:${Math.max(3, 100*s.tokens_all/maxTok)}%;background:${col(s.status)}"></i></div>
+      <div class="p"><span>${fmtTok(s.tokens_all)} etkin token</span><span>${s.tokens.calls} adım</span></div>
+    </div>
+  </div>`;
+}
+
+// mesaide olmayan çalışan: boş masa, adı, komutu ve son görülme zamanı
+const wid = w => "w:" + w.dept + "/" + w.worker;
+function idleHTML(w, now){
+  const last = w.last_ts ? ago(w.last_ts, now) : "son 7 günde yok";
+  return `<div class="st s-off" data-id="${esc(wid(w))}" tabindex="0" title="${esc(w.worker)}: mesaide değil">
+    <div class="bubble">mesaide değil</div>
+    ${stationSVG({id: wid(w), status: "kapandi", helpers: []})}
+    <div class="plate">
+      <div class="tag" style="color:var(--idle)"><span class="dot" style="background:var(--idle)"></span>Mesaide değil${w.chief ? " · şef" : ""}</div>
+      <div class="t" title="${esc(w.worker)}">${esc(w.worker)}</div>
+      <div class="p"><span>${esc(w.commands[0] || "")}</span><span>${esc(last)}</span></div>
+    </div>
+  </div>`;
+}
+
+// --- Sesli uyarı: bir çalışan "seni bekliyor" ya da "onay bekliyor" durumuna geçince söyler ---------------------
+// Tarayıcılar sesi ancak sayfada bir tıklamadan sonra çalmaya izin verir; bu yüzden açıkken ilk tıklama sesi "etkinleştirir".
+const VOICE = {on:false, armed:false, prev:{}, last:{}, first:true};
+try { VOICE.on = localStorage.getItem("office-voice") === "1"; } catch(e) {}
+let AC = null;
+function voiceUI(){
+  const b = document.getElementById("voiceBtn");
+  b.setAttribute("aria-pressed", VOICE.on ? "true" : "false");
+  b.classList.toggle("need", VOICE.on && !VOICE.armed);
+  b.textContent = !VOICE.on ? "🔕 Sesli uyarı kapalı" : VOICE.armed ? "🔔 Sesli uyarı açık" : "🔔 Sesi etkinleştirmek için tıkla";
+}
+function arm(){
+  VOICE.armed = true;
+  try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); AC.resume(); } catch(e) {}
+  try { speechSynthesis.getVoices(); } catch(e) {}
+  voiceUI();
+}
+function chime(){  // iki notalı yumuşak zil
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t = AC.currentTime;
+    [[880, 0], [1318.5, 0.14]].forEach(([f, d]) => {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = "sine"; o.frequency.value = f;
+      g.gain.setValueAtTime(0, t + d); g.gain.linearRampToValueAtTime(0.16, t + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.5);
+      o.connect(g).connect(AC.destination); o.start(t + d); o.stop(t + d + 0.55);
+    });
+  } catch(e) {}
+}
+function speak(text){
+  chime();
+  if(!("speechSynthesis" in window)) return;  // konuşma yoksa sadece zil
+  setTimeout(() => {
+    const u = new SpeechSynthesisUtterance(text);
+    const v = speechSynthesis.getVoices().find(x => /^tr/i.test(x.lang));
+    if(v) u.voice = v;
+    u.lang = v ? v.lang : "tr-TR"; u.rate = 1.0;
+    speechSynthesis.speak(u);
+  }, 600);
+}
+const who = s => s.project || s.title || "Bir çalışan";
+function announce(list, now){
+  for(const s of list){
+    const p = VOICE.prev[s.id];
+    VOICE.prev[s.id] = s.status;
+    if(VOICE.first || !p || p === s.status) continue;
+    if(!["bekliyor", "izin"].includes(s.status)) continue;
+    if(!VOICE.on || !VOICE.armed) continue;
+    if(now - (VOICE.last[s.id] || 0) < 20) continue;  // aynı çalışan için 20 sn'de en fazla bir uyarı
+    VOICE.last[s.id] = now;
+    speak(s.status === "izin" ? `${who(s)} onayını bekliyor` : `${who(s)} incelemeni bekliyor`);
+  }
+  VOICE.first = false;
+  const waiting = list.filter(s => ["bekliyor", "izin"].includes(s.status)).length;
+  document.title = (waiting ? `(${waiting}) ` : "") + "Agent Ofisi";
+}
+document.getElementById("voiceBtn").onclick = e => {
+  e.stopPropagation();
+  if(!VOICE.on){ VOICE.on = true; arm(); speak("Sesli uyarı açık"); }
+  else if(!VOICE.armed){ arm(); speak("Sesli uyarı açık"); }
+  else { VOICE.on = false; try { speechSynthesis.cancel(); } catch(_) {} }
+  try { localStorage.setItem("office-voice", VOICE.on ? "1" : "0"); } catch(_) {}
+  voiceUI();
+};
+document.getElementById("voiceTest").onclick = e => { e.stopPropagation(); arm(); speak("Deneme. Worker Kurucu incelemeni bekliyor"); };
+document.addEventListener("pointerdown", () => { if(VOICE.on && !VOICE.armed) arm(); });
+voiceUI();
+
+let lastSig = {};
+function render(){
+  if(!DATA) return;
+  const before = snapPositions();
+  const now = DATA.now;
+  const list = DATA.sessions.filter(s => now - s.last_ts <= WIN*3600);
+  announce(DATA.sessions, now);
+  const grid = document.getElementById("grid");
+  const maxTok = Math.max(1, ...list.map(s=>s.tokens_all));
+  // istatistikler
+  const n = k => list.filter(s=>s.status===k).length;
+  const helpersRun = list.reduce((a,s)=>a+(s.helpers||[]).filter(h=>h.status==="calisiyor"||h.status==="dusunuyor").length,0);
+  const total = list.reduce((a,s)=>a+s.tokens_all,0);
+  document.getElementById("stats").innerHTML = [
+    [n("calisiyor")+n("dusunuyor"), "çalışıyor", "--run"], [helpersRun, "yardımcı aktif", "--think"],
+    [n("bekliyor"), "seni bekliyor", "--wait"], [n("izin"), "onay bekliyor", "--perm"],
+  ].map(([v,l,c])=>`<div class="pill"><span class="dot" style="background:var(${c})"></span><b>${v}</b> ${l}</div>`).join("")
+   + `<div class="pill">∑ <b>${fmtTok(total)}</b> etkin token</div>`;
+  document.getElementById("sub").textContent = `${list.length} çalışma arkadaşı · ${clock(now)}`;
+  document.getElementById("live").innerHTML = DATA.hooks
+    ? `<span class="dot" style="background:var(--run)"></span> canlı olaylar açık`
+    : `<span class="dot" style="background:var(--idle)"></span> canlı olaylar kapalı (sadece kayıtlar)`;
+  document.getElementById("live").style.display="flex"; document.getElementById("live").style.gap="6px"; document.getElementById("live").style.alignItems="center";
+
+  const depts = DATA.depts || [];
+  if(!list.length && !depts.length){ grid.innerHTML = `<div class="empty">Bu zaman aralığında çalışan bir Claude Code oturumu yok.</div>`; lastSig={}; return; }
+  grid.querySelector(".empty")?.remove();
+  // odalar yan yana kartlar: Yönetim → departmanlar → ekip dışı (ekip klasörü ayarlı değilse tek oda)
+  const rooms = [];
+  if(DATA.team){
+    for(const r of [YONETIM, ...depts, ...new Set(list.map(s=>s.dept).filter(d=>d && d!==YONETIM && !depts.includes(d)))]){
+      const ss = list.filter(s=>s.dept===r);
+      const idle = (DATA.roster||[]).filter(w=>w.dept===r && !ss.some(x=>x.worker===w.worker));
+      if(ss.length || idle.length || r!==YONETIM) rooms.push({key:r, ss, idle});
+    }
+    const other = list.filter(s=>!s.dept);
+    if(other.length) rooms.push({key:null, ss:other});
+  } else rooms.push({key:"", ss:list});
+  const keepRooms = new Set();
+  let prevRoom = null;
+  for(const r of rooms){
+    const rid = "room:" + (r.key ?? "_diger");
+    keepRooms.add(rid);
+    let card = grid.querySelector(`.roomcard[data-room="${CSS.escape(rid)}"]`);
+    if(!card){
+      card = document.createElement("section");
+      card.className = "roomcard"; card.dataset.room = rid;
+      card.innerHTML = `<div class="rhead"></div><div class="desks"></div>`;
+      grid.appendChild(card);
+    }
+    const hsig = JSON.stringify([r.ss.map(x=>x.status), r.ss.reduce((a,x)=>a+x.tokens_all,0), (r.idle||[]).length, r.ss.filter(x=>activityOf(x)==="kahve").map(x=>x.id)]);
+    if(lastSig[rid] !== hsig){ card.querySelector(".rhead").innerHTML = roomHTML(r.key, r.ss, (r.idle||[]).length); lastSig[rid] = hsig; }
+    const idle = r.idle || [];
+    const cols = Math.max(1, Math.min(r.ss.length + idle.length, 4));
+    card.style.setProperty("--cols", cols);
+    card.style.flexBasis = (cols * 162 + 28) + "px";  // genişlik başlığa değil masa sayısına göre
+    card.classList.toggle("emptyroom", !r.ss.length && !idle.length);
+    if(prevRoom ? prevRoom.nextElementSibling!==card : grid.firstElementChild!==card){ prevRoom ? prevRoom.after(card) : grid.prepend(card); }
+    prevRoom = card;
+    // masalar: sadece değişenleri yeniden çiz (animasyonlar kesilmesin)
+    const desks = card.querySelector(".desks"), keep = new Set();
+    let prev = null;
+    for(const s of r.ss){
+      keep.add(s.id);
+      const sig = JSON.stringify([s.status,s.activity,activityOf(s),s.title,s.tokens_all,(s.helpers||[]).map(h=>h.status),Math.round((now-s.last_ts)/60),maxTok]);
+      let el = grid.querySelector(`.st[data-id="${CSS.escape(s.id)}"]`);
+      if(!el || lastSig[s.id]!==sig || el.parentElement!==desks){
+        const tmp = document.createElement("div"); tmp.innerHTML = stationHTML(s, now, maxTok);
+        const ne = tmp.firstElementChild;
+        ne.onclick = () => openDrawer(s.id); ne.onkeydown = e => { if(e.key==="Enter") openDrawer(s.id); };
+        if(el) el.remove();
+        desks.appendChild(ne); el = ne; lastSig[s.id]=sig;
+      }
+      if(prev ? prev.nextElementSibling!==el : desks.firstElementChild!==el){ prev ? prev.after(el) : desks.prepend(el); }
+      prev = el;
+    }
+    for(const w of idle){
+      const id = wid(w); keep.add(id);
+      const sig = JSON.stringify([w.last_ts ? Math.round((now-w.last_ts)/3600) : null, w.commands, w.chief]);
+      let el = grid.querySelector(`.st[data-id="${CSS.escape(id)}"]`);
+      if(!el || lastSig[id]!==sig || el.parentElement!==desks){
+        const tmp = document.createElement("div"); tmp.innerHTML = idleHTML(w, now);
+        const ne = tmp.firstElementChild;
+        ne.onclick = () => openDrawer(id); ne.onkeydown = e => { if(e.key==="Enter") openDrawer(id); };
+        if(el) el.remove();
+        desks.appendChild(ne); el = ne; lastSig[id]=sig;
+      }
+      if(prev ? prev.nextElementSibling!==el : desks.firstElementChild!==el){ prev ? prev.after(el) : desks.prepend(el); }
+      prev = el;
+    }
+    [...desks.children].forEach(el => { if(!keep.has(el.dataset.id)) { el.remove(); delete lastSig[el.dataset.id]; } });
+  }
+  [...grid.children].forEach(el => { if(el.dataset.room && !keepRooms.has(el.dataset.room)) el.remove(); });
+  runTransitions(list, before);
+  if(OPEN) fillDrawer(OPEN);
+}
+
+const LIMNAME = l => /5-hour/i.test(l) ? "5 saatlik limit" : /fable/i.test(l) ? "Haftalık · Fable" : /sonnet/i.test(l) ? "Haftalık · Sonnet" : /opus/i.test(l) ? "Haftalık · Opus" : /weekly/i.test(l) ? "Haftalık · tüm modeller" : l;
+const left = (t, now) => { const s=Math.max(0,t-now), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.round(s%3600/60);
+  return d ? `${d} gün ${h} sa` : h ? `${h} sa ${m} dk` : `${m} dk`; };
+function renderLimits(){
+  const L = DATA.limits, el = document.getElementById("limits");
+  if(!L){ el.innerHTML = `<div class="limnote">Limit bilgisi yok. Claude'a "limitleri güncelle" de, buraya yazsın.</div>`; return; }
+  const now = DATA.now;
+  el.innerHTML = L.windows.map(w => {
+    const p = w.estimate, c = p >= 90 ? "var(--perm)" : p >= 70 ? "var(--wait)" : "var(--run)";
+    return `<div class="lim" title="Son kesin ölçüm: %${w.snapshot}${w.estimated ? " · aradaki tüketimden tahmin" : ""}">
+      <div class="row"><span class="lb">${esc(LIMNAME(w.label))}</span><b>${w.estimated ? "≈" : ""}%${Math.round(p)}</b></div>
+      <div class="bar"><i style="width:${Math.max(1.5, p)}%;background:${c}"></i></div>
+      <div class="row"><span>kalan %${Math.max(0, 100 - Math.round(p))}</span><span>${left(w.resets_at, now)} sonra yenilenir</span></div>
+    </div>`; }).join("")
+    + `<div class="limnote">${esc(L.plan||"")} planı · kesin ölçüm ${ago(L.t, now)}; sonrası bu bilgisayardaki tüketimden tahmin (≈). Kesin değer için Claude'a "limitleri güncelle" de.</div>`;
+}
+
+const TOKEN = document.querySelector('meta[name="office-token"]')?.content || "";
+let CTL_FOR = null;
+function buildComposer(id){
+  // bir kez kurulur; panel her 2 sn yenilenirken yazdığın metin silinmesin diye ayrı tutulur
+  CTL_FOR = id;
+  document.getElementById("dctl").innerHTML = `
+    <div class="composer" id="cmp">
+      <h3>Bu oturuma yaz</h3>
+      <textarea id="cmpText" placeholder="Mesajın… (Ctrl+Enter ile gönder)"></textarea>
+      <div class="row">
+        <button class="primary" id="cmpSend">Gönder</button>
+        <button id="cmpStop" title="Oturuma Esc tuşu gönderir: o anki işi durdurur">Durdur (Esc)</button>
+        <button id="cmpClose" title="Oturumu kapatır (/exit). Çalışan işten çıkmaz, sadece bu mesai biter.">Mesaiyi bitir</button>
+        <span class="hint" id="cmpHint"></span>
+      </div>
+      <div class="msg" id="cmpMsg"></div>
+    </div>`;
+  const ta = document.getElementById("cmpText");
+  ta.addEventListener("keydown", e => { e.stopPropagation(); if(e.key==="Enter" && (e.ctrlKey||e.metaKey)) send(); if(e.key==="Escape") ta.blur(); });
+  document.getElementById("cmpSend").onclick = () => send();
+  document.getElementById("cmpStop").onclick = () => send("interrupt");
+  document.getElementById("cmpClose").onclick = () => { if(confirm("Bu oturumun mesaisi bitirilsin mi? (Claude'a /exit gönderilir; çalışan ve dosyaları yerinde kalır.)")) send("close"); };
+}
+function updateComposer(s){
+  const c = s.control || {ok:false, why:"Bilinmiyor."};
+  document.getElementById("cmp").classList.toggle("off", !c.ok);
+  document.getElementById("cmpText").disabled = !c.ok;
+  document.getElementById("cmpSend").disabled = !c.ok;
+  document.getElementById("cmpStop").disabled = !c.ok || !["calisiyor","dusunuyor","izin"].includes(s.status);
+  document.getElementById("cmpClose").disabled = !c.ok;
+  document.getElementById("cmpHint").textContent = c.ok ? `tmux ${c.pane}` : "";
+  const m = document.getElementById("cmpMsg");
+  if(!c.ok){ m.style.color="var(--muted)"; m.innerHTML = esc(c.why).replace(/`([^`]+)`/g,"<code>$1</code>"); }
+  else if(m.dataset.kind!=="result"){ m.textContent = s.status==="calisiyor"||s.status==="dusunuyor" ? "Çalışırken gönderirsen mesaj sıraya girer, işi bitince okur." : ""; m.style.color="var(--muted)"; }
+}
+async function send(action){
+  const id = CTL_FOR, ta = document.getElementById("cmpText"), m = document.getElementById("cmpMsg");
+  const text = ta.value;
+  if(!action && !text.trim()) return;
+  m.dataset.kind="result"; m.style.color="var(--muted)"; m.textContent = action==="close" ? "Mesai bitiriliyor…" : action ? "Durduruluyor…" : "Gönderiliyor…";
+  try{
+    const r = await fetch("/api/send", {method:"POST", headers:{"Content-Type":"application/json","X-Office-Token":TOKEN},
+      body: JSON.stringify(action ? {id, action} : {id, text})});
+    const j = await r.json();
+    m.style.color = j.ok ? "var(--run)" : "var(--perm)"; m.textContent = j.message;
+    if(j.ok && !action) ta.value = "";
+  }catch(e){ m.style.color="var(--perm)"; m.textContent = "Sunucuya ulaşılamadı."; }
+  setTimeout(()=>{ m.dataset.kind=""; }, 4000);
+}
+
+async function api(path, body){
+  try{
+    const r = await fetch(path, {method:"POST", headers:{"Content-Type":"application/json","X-Office-Token":TOKEN}, body: JSON.stringify(body)});
+    return await r.json();
+  }catch(e){ return {ok:false, message:"Sunucuya ulaşılamadı."}; }
+}
+async function refreshNow(){ try{ const r = await fetch("/api/state",{cache:"no-store"}); DATA = await r.json(); render(); renderLimits(); }catch(e){} }
+function arsivUI(){
+  const n = (DATA.archive||[]).length + (DATA.hidden ? 1 : 0), b = document.getElementById("arsivBtn");
+  b.style.display = n ? "" : "none";
+  b.textContent = `🗄️ Arşiv${(DATA.archive||[]).length ? ` (${DATA.archive.length})` : ""}`;
+}
+document.getElementById("arsivBtn").onclick = e => { e.stopPropagation(); openDrawer("arsiv"); };
+function fillArsiv(){
+  CTL_FOR = null; document.getElementById("dctl").innerHTML = "";
+  const now = DATA.now, A = DATA.archive || [];
+  document.getElementById("dtop").innerHTML = `<h2>🗄️ Arşiv</h2><div class="meta">İşten çıkarılan çalışanların klasörleri ekip klasöründeki <b>_Arşiv</b> altında durur. Geri alınca eski yerine döner ve ekip listelerine yeniden eklenir.</div>`;
+  document.getElementById("dbody").innerHTML = `
+    <div class="sec"><h3>İşten çıkarılanlar</h3>${A.length ? A.map(a=>`<div class="arow"><span>👤 <b>${esc(a.worker)}</b> · ${esc(a.dept)}<br><span class="meta">${a.t ? ago(a.t, now) : ""} çıkarıldı</span></span><button class="abtn" data-rehire="${esc(a.id)}">Geri al</button></div>`).join("") : `<div class="meta">Arşivde çalışan yok.</div>`}</div>
+    <div class="sec"><h3>Kaldırılan masalar</h3>${DATA.hidden ? `<div class="arow"><span>${DATA.hidden} masa panodan kaldırıldı</span><button class="abtn" id="unhideAll">Hepsini geri getir</button></div>` : `<div class="meta">Kaldırılan masa yok.</div>`}</div>
+    <div class="actmsg" id="arsivMsg"></div>`;
+  document.querySelectorAll("[data-rehire]").forEach(b => b.onclick = async () => {
+    b.disabled = true; const j = await api("/api/worker", {action:"rehire", id:b.dataset.rehire});
+    const m = document.getElementById("arsivMsg"); m.style.color = j.ok ? "var(--run)" : "var(--perm)"; m.textContent = j.message; refreshNow();
+  });
+  const u = document.getElementById("unhideAll");
+  if(u) u.onclick = async () => { u.disabled = true; const j = await api("/api/desk", {action:"unhide-all"}); document.getElementById("arsivMsg").textContent = j.message; refreshNow(); };
+}
+
+function openDrawer(id){ OPEN=id; if(!id.startsWith("w:") && id!=="arsiv" && CTL_FOR!==id) buildComposer(id); fillDrawer(id); const d=document.getElementById("drawer"); d.classList.add("open"); d.setAttribute("aria-hidden","false"); }
+function closeDrawer(){ OPEN=null; const d=document.getElementById("drawer"); d.classList.remove("open"); d.setAttribute("aria-hidden","true"); }
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeDrawer(); });
+
+function fillWorker(id){
+  const w = (DATA.roster||[]).find(x=>wid(x)===id); if(!w){ closeDrawer(); return; }
+  const now = DATA.now, past = DATA.sessions.filter(x=>x.dept===w.dept && x.worker===w.worker).sort((a,b)=>b.last_ts-a.last_ts);
+  const rel = (w.dept === YONETIM ? "" : w.dept + "/") + w.worker;
+  CTL_FOR = null; document.getElementById("dctl").innerHTML = "";
+  document.getElementById("dtop").innerHTML = `
+    <div class="tag" style="color:var(--idle)"><span class="dot" style="background:var(--idle)"></span>Mesaide değil${w.chief ? " · şef" : ""}</div>
+    <h2>${esc(w.worker)}</h2>
+    <div class="meta">🚪 ${esc(w.dept)} · 📁 ${esc(w.path)}<br>son görülme: ${w.last_ts ? ago(w.last_ts, now) : "son 7 günde yok"}</div>`;
+  document.getElementById("dbody").innerHTML = `
+    <div class="sec"><h3>Mesaiye çağır</h3><div class="say">Terminal (Linux/macOS): ekip "${esc(rel)}"
+Masaüstü uygulaması: Code → yeni oturum → bu klasörü seç
+Sonra: ${esc(w.commands.join("  ") || "(başlangıç komutu yok)")}</div></div>
+    <div class="sec"><h3>Son oturumları</h3>${past.length ? `<ul class="tl">${past.slice(0,10).map(x=>`<li style="cursor:pointer" data-open="${esc(x.id)}"><span>${x.status==="kapandi"?"🪑":"🖥️"}</span><span>${esc(x.title)}</span><time>${ago(x.last_ts, now)}</time></li>`).join("")}</ul>` : `<div class="meta">Son 7 günde oturumu yok.</div>`}</div>`;
+  document.querySelectorAll("#dbody [data-open]").forEach(li => li.onclick = () => openDrawer(li.dataset.open));
+  const kurucu = w.worker === "Worker Kurucu";
+  document.getElementById("dbody").insertAdjacentHTML("beforeend", `
+    <div class="sec"><h3>İşten çıkar</h3>
+      <div class="meta">Klasörü ekip klasöründeki <b>_Arşiv</b> altına taşınır, ekip listelerinden çıkarılır ve panoda görünmez. Silinmez: üst bardaki 🗄️ Arşiv'den geri alınabilir.</div>
+      <div class="acts"><button class="abtn danger" id="fireBtn" ${kurucu ? "disabled title='Yeni çalışanları o kuruyor'" : ""}>İşten çıkar</button></div>
+      <div class="actmsg" id="fireMsg">${kurucu ? "Worker Kurucu işten çıkarılamaz." : ""}</div></div>`);
+  const fb = document.getElementById("fireBtn");
+  if(fb && !kurucu) fb.onclick = async () => {
+    if(!confirm(`${w.worker} işten çıkarılsın mı?\n\nKlasörü _Arşiv'e taşınacak ve ekip listelerinden çıkarılacak. Arşiv'den geri alabilirsin.`)) return;
+    fb.disabled = true;
+    const j = await api("/api/worker", {action:"fire", dept: w.dept, worker: w.worker});
+    const m = document.getElementById("fireMsg"); m.style.color = j.ok ? "var(--run)" : "var(--perm)"; m.textContent = j.message;
+    if(j.ok){ setTimeout(()=>{ closeDrawer(); refreshNow(); }, 900); } else fb.disabled = false;
+  };
+}
+
+function fillDrawer(id){
+  if(id === "arsiv") return fillArsiv();
+  if(id.startsWith("w:")) return fillWorker(id);
+  const s = DATA.sessions.find(x=>x.id===id); if(!s){ closeDrawer(); return; }
+  const now = DATA.now, t = s.tokens, meta = ST[s.status]||ST.bosta;
+  const dur = s.started ? Math.round((s.last_ts - s.started)/60) : 0;
+  document.getElementById("dtop").innerHTML = `
+    <div class="tag" style="color:${col(s.status)}"><span class="dot" style="background:${col(s.status)}"></span>${meta.label}</div>
+    <h2>${esc(s.title)}</h2>
+    <div class="meta">📁 ${esc(s.cwd||s.project)}<br>${esc(s.model||"")} · ${dur} dk boyunca · son hareket ${ago(s.last_ts, now)}</div>
+    <div class="sec"><h3>Şu an</h3><div class="say">${esc(s.activity)}</div></div>
+    <div class="acts"><button class="abtn" id="hideDesk" ${["calisiyor","dusunuyor","izin"].includes(s.status) ? "disabled title='Çalışırken kaldırılamaz'" : ""}>Masadan kaldır</button></div>
+    <div class="actmsg">${s.status==="kapandi" ? "Bu oturum kapandı. Masasını panodan kaldırabilirsin; Arşiv'den geri getirilebilir." : ""}</div>`;
+  document.getElementById("hideDesk").onclick = async () => { const j = await api("/api/desk", {action:"hide", id}); if(j.ok){ closeDrawer(); refreshNow(); } };
+  if(CTL_FOR!==id) buildComposer(id);
+  updateComposer(s);
+  document.getElementById("dbody").innerHTML = `
+    <div class="sec"><h3>Token</h3><div class="kv">
+      <div><b>${fmtTok(s.tokens_all)}</b><span>etkin token (yardımcılar dahil)</span></div>
+      <div><b>${t.calls}</b><span>model adımı</span></div>
+      <div><b>${fmtTok(t.output)}</b><span>yazdığı (çıktı)</span></div>
+      <div><b>${fmtTok(t.cache_read)}</b><span>tekrar okuduğu (önbellek)</span></div>
+    </div><div class="meta" style="margin-top:6px">Etkin token: önbellekten okuma ×0,1 · önbelleğe yazma ×2 · çıktı ×5 ağırlıkla.</div></div>
+    ${s.top_tools?.length?`<div class="sec"><h3>En çok kullandığı araçlar</h3><div class="tools">${s.top_tools.map(([n,c])=>`<span>${esc(n.replace(/^mcp__.*__/,""))} · ${c}</span>`).join("")}</div></div>`:""}
+    ${(s.helpers||[]).length?`<div class="sec"><h3>Yardımcıları (alt agent'lar) · ${s.helpers.length}</h3>${s.helpers.slice().reverse().map(h=>`
+      <div class="hl"><div class="tag" style="color:${col(h.status)}"><span class="dot" style="background:${col(h.status)}"></span>${(ST[h.status]||ST.bosta).label} · ${fmtTok(h.tokens.effective)} token</div>
+      <div style="font-size:13px">${esc(h.task||h.id)}</div>
+      <div class="meta">${esc(h.activity)} · ${ago(h.last_ts, now)}</div></div>`).join("")}</div>`:""}
+    <div class="sec"><h3>Son yaptıkları</h3><ul class="tl">${s.timeline.slice().reverse().map(e=>`<li><span>${e.icon}</span><span>${esc(e.text)}</span><time>${clock(e.t)}</time></li>`).join("")||"<li>—</li>"}</ul></div>
+    ${s.last_text?`<div class="sec"><h3>Son söylediği</h3><div class="say">${esc(s.last_text)}</div></div>`:""}`;
+}
+
+async function tick(){
+  try{
+    const r = await fetch("/api/state", {cache:"no-store"});
+    DATA = await r.json(); render(); renderLimits(); arsivUI();
+  }catch(e){ document.getElementById("sub").textContent = "sunucuya ulaşılamıyor — server.py çalışıyor mu?"; }
+}
+tick(); setInterval(tick, 2000);
+</script>
+</body>
+</html>

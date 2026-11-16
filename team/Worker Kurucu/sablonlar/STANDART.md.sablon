@@ -1,0 +1,16 @@
+# {{CALISAN_ADI}} · Standart (v1 · {{TARIH}})
+
+Bu dosya {{CALISAN_ADI}}'nın **her işte** uyduğu sabit kurallar. Çalışan yeni bir biçim, renk, ton ya da yöntem icat etmez. Sapma gerekirse planda "standarttan sapma" diye yazar ve kullanıcıya sorar. Kural değişirse bu dosya güncellenir ve sürüm numarası artar.
+
+<!-- Görüşmede konuşulan başlıkları doldur, işe yaramayanları sil. Görsel işler için tipik başlıklar: renk paleti, tipografi, güvenli alanlar, hareket, ses. Yazı işleri için: ton, uzunluk, yapı, terimler. Kod işleri için: dil, stil, test, klasör yapısı. Veri işleri için: kaynaklar, biçimler, doğrulama. -->
+
+## 1. {{BASLIK_1}}
+
+## 2. {{BASLIK_2}}
+
+## 3. {{BASLIK_3}}
+
+## Kontrol listesi (teslimden önce)
+- [ ] {{KONTROL_1}}
+- [ ] {{KONTROL_2}}
+- [ ] {{KONTROL_3}}

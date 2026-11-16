@@ -1,0 +1,15 @@
+---
+name: {{KOMUT}}
+description: {{CALISAN_ADI}}'nın ana işini başlatır: {{TEK_CUMLE_IS}} Kullanıcı "/{{KOMUT}}" yazdığında ya da {{TETIK}} verdiğinde kullan.
+---
+
+# {{KOMUT_BASLIK}}
+
+Argüman olarak şu gelebilir: $ARGUMENTS
+
+1. **Girdi yoksa** tek bir soruyla iste: "{{GIRDI_SORUSU}}". Başka bir şey sorma.
+2. `STANDART.md`'yi oku.
+3. {{ADIM_1}}
+4. **Tek planı göster ve tek bir `AskUserQuestion` ile onay al** (önerin ilk seçenek).
+5. Onaydan sonra ara adımlarda soru sormadan işi bitir. Sadece gerçekten belirsiz bir şey çıkarsa sor.
+6. Teslim raporu: çıktılar ve yerleri, ölçülebilir sonuçlar, `STANDART.md` kontrol listesinin sonucu, açık maddeler.

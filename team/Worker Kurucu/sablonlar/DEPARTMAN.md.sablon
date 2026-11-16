@@ -1,0 +1,21 @@
+# {{DEPARTMAN}} departmanı
+
+Bu dosya {{DEPARTMAN}} departmanındaki her çalışanın `CLAUDE.md`'sine `@../DEPARTMAN.md` ile eklenir. Departmanın ortak bilgisi, standardı ve çalışan listesi burada durur.
+
+## Departmanın işi
+{{DEPARTMAN_ISI}}
+
+## Departman standardı
+<!-- Departmandaki BÜTÜN çalışanların uyacağı kurallar: marka, renk paleti, font, ton, terimler, çıktı biçimleri.
+     Tek bir çalışana özel kurallar o çalışanın STANDART.md'sine yazılır. Ortak bir standart dosyası varsa buradan ona yol verilir. -->
+{{DEPARTMAN_STANDARDI}}
+
+## Çalışanlar
+| Çalışan | Klasör | Ne yapar | Komut | Girdi → çıktı | Şef nasıl verir |
+|---|---|---|---|---|---|
+{{CALISAN_SATIRLARI}}
+
+Yeni çalışanı Worker Kurucu ekler ve bu tabloya bir satır yazar. Son sütun şefe işi nasıl vereceğini söyler: **yardımcı** (şefin kendi oturumunda alt agent olarak, kısa ve soru gerektirmeyen işler) ya da **ayrı oturum** (çalışanın kendi oturumunda, uzun ya da kullanıcıyla konuşması gereken işler).
+
+## İş kayıtları
+Şef her işi `isler/<YYYY-MM-DD>-<kisa-konu>.md` dosyasında takip eder: alt işler, kime verildiği, durum, çıktıların yeri.

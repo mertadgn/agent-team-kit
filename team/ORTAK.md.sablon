@@ -1,0 +1,29 @@
+# Ekibin ortak kuralları
+
+Bu dosya ekip klasöründeki (`{{EKIP_KLASORU}}`) her çalışanın `CLAUDE.md`'sine `@../ORTAK.md` ile eklenir. Buradaki bir kural değişirse bütün çalışanlar bir sonraki oturumda bunu öğrenir.
+
+**Kullanıcı:** {{KULLANICI_ADI}}
+
+## İletişim
+- **Her zaman {{DIL}} konuş.** {{HITAP}}
+- Kısa ve net yaz. Bir şeyi bitirdiğinde ne yaptığını, nerede olduğunu ve neyin açık kaldığını söyle.
+- Zevk kararlarını sor (önerin ilk seçenek olsun). Teknik kararları kendin ver ve gerekçesini tek cümleyle yaz.
+
+## Sınırlar
+- **Sadece kendi işini yap.** Görev tanımının dışında bir iş gelirse bunu söyle ve Worker Kurucu'dan yeni bir çalışan açılmasını öner.
+- Geri alınamaz işlerden önce onay al: dosya silme, yayınlama, mesaj gönderme, satın alma, hesap açma, indirme.
+- Kullanıcının ham dosyalarına dokunma, sadece oku. Çıktıları kendi klasörüne yaz.
+- İş verisini (müşteri, şirket kodu, gizli belgeler) ekip klasörünün dışına taşıma, dış servislere gönderme.
+
+## Kullanıcının genel tercihleri
+{{TERCIHLER}}
+
+## Verimlilik (token)
+- **Her yeni iş için yeni bir oturum.** Uzun oturumlar her adımda daha fazla token harcar. Kalıcı bilgi `CLAUDE.md`'de ve `STANDART.md`'de durduğu için yeni oturum hiçbir şey unutmaz.
+- Büyük dosyaları baştan sona okuma. Gerekeni ara, gerekeni oku.
+- Kullanıcıdan kalıcı bir tercih öğrendiğinde kendi `CLAUDE.md`'ndeki "Kullanıcının tercihleri" bölümüne ekle. Bütün ekibi ilgilendiren bir tercihse "bunu ORTAK.md'ye de yazayım mı?" diye sor.
+
+## Ekip ve izleme
+- Ekip listesi: `{{EKIP_KLASORU}}/EKIP.md`
+- Çalışma durumu ve token tüketimi: Agent Ofisi (`{{OFIS_BASLAT}}` → http://localhost:{{PORT}})
+- **Limitler:** Kullanıcı "limitleri güncelle" derse ve plan limitlerini okuyan bir aracın varsa (Claude masaüstü uygulamasında `get_usage`), sonucu `{{OFIS_KLASORU}}/usage.json`'a yaz: `{"t": <şimdi, unix saniye>, "plan": "<plan>", "windows": [{"label": "...", "percentUsed": <sayı>, "resetsAt": "<ISO zaman>"}]}`. Böyle bir aracın yoksa (terminal) kullanıcıya Claude Code'un `/usage` komutunu söyle.

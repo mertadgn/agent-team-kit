@@ -1,0 +1,12 @@
+---
+name: yeni-is
+description: {{DEPARTMAN}} departmanına yeni bir iş verir. Şef konuyu alt işlere ayırır, planı tek onayla onaylatır, çalışanlara (yardımcı ya da ayrı oturum olarak) dağıtır, takip eder ve tek teslim yapar. Kullanıcı "/yeni-is <konu>", "bunu ekibe dağıt" dediğinde kullan.
+---
+
+# Yeni iş
+
+Kullanıcının verdiği konu ya da girdi: $ARGUMENTS
+
+1. Konu boşsa tek bir soruyla iste: "Ne yapalım? Konuyu ya da girdiyi yaz."
+2. `CLAUDE.md`'deki iş akışını uygula: anla → planla → tek onay → `../isler/` altında iş kaydı → dağıt → takip et → toplu teslim.
+3. Departmanda karşılığı olmayan bir parça varsa planda belirt ve Worker Kurucu'dan yeni bir çalışan açılmasını öner.
